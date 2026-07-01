@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* One plain system font used everywhere in the app -- no web fonts, no decorative typefaces. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
