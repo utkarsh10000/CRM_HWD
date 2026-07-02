@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import DateFilter from "../_components/DateFilter";
 import EmployeeFilter from "../_components/EmployeeFilter";
+import ProjectFilter from "../_components/ProjectFilter";
 import DataTable from "../_components/DataTable";
 
 const COLUMNS = [
@@ -22,6 +23,7 @@ export default function AdminVisitPlannedPage() {
   const [customEnd, setCustomEnd] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [employeeName, setEmployeeName] = useState("");
+  const [project, setProject] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,6 +36,7 @@ export default function AdminVisitPlannedPage() {
     }
     if (employeeId) params.set("employeeId", employeeId);
     if (employeeName) params.set("name", employeeName);
+    if (project) params.set("project", project);
     try {
       const res = await fetch(`/api/admin/visit-planned?${params}`);
       const data = await res.json();
@@ -41,7 +44,7 @@ export default function AdminVisitPlannedPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter, customStart, customEnd, employeeId, employeeName]);
+  }, [filter, customStart, customEnd, employeeId, employeeName, project]);
 
   useEffect(() => {
     if (filter !== "custom" || (customStart && customEnd)) fetchData();
@@ -58,6 +61,17 @@ export default function AdminVisitPlannedPage() {
     setEmployeeName(name);
   }
 
+  function handleProjectChange({ project: p }) {
+    setProject(p);
+  }
+
+  async function handleDelete(id) {
+    const res = await fetch(`/api/admin/visits/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-12">
       <div className="mx-auto w-full max-w-6xl">
@@ -72,13 +86,14 @@ export default function AdminVisitPlannedPage() {
           <div className="mt-4 flex flex-wrap gap-4">
             <DateFilter value={filter} customStart={customStart} customEnd={customEnd} onChange={handleFilterChange} includeFuture />
             <EmployeeFilter employeeId={employeeId} employeeName={employeeName} onChange={handleEmployeeChange} />
+            <ProjectFilter project={project} onChange={handleProjectChange} />
           </div>
 
           <div className="mt-6">
             {loading ? (
               <p className="py-8 text-center text-sm text-slate-500">Loading…</p>
             ) : (
-              <DataTable columns={COLUMNS} rows={rows} filename="visit-planned" />
+              <DataTable columns={COLUMNS} rows={rows} filename="visit-planned" onDelete={handleDelete} />
             )}
           </div>
         </div>

@@ -7,6 +7,7 @@ import { getISTDateString } from "@/lib/istDate";
 const FIELDS = [
   "leadsAttended",
   "notConnected",
+  "callConnected",
   "visitPlanned",
   "visitManaged",
   "meetingDone",

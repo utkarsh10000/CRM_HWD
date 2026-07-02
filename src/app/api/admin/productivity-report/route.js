@@ -60,6 +60,7 @@ export async function GET(request) {
     meetingDone: r.meetingDone,
     bookingByCp: r.bookingByCp,
     bookingBySelf: r.bookingBySelf,
+    callConnected: r.callConnected,
   }));
 
   return NextResponse.json({ reports: result });

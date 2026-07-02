@@ -15,6 +15,7 @@ const COLUMNS = [
   { key: "visitPlanned", label: "Visit Planned" },
   { key: "visitManaged", label: "Visit Managed" },
   { key: "meetingDone", label: "Meeting Done" },
+  { key: "callConnected", label: "Call Connected" },
   { key: "bookingByCp", label: "Booking by CP" },
   { key: "bookingBySelf", label: "Booking by Self" },
 ];
@@ -61,6 +62,13 @@ export default function ProductivityReportPage() {
     setEmployeeName(name);
   }
 
+  async function handleDelete(id) {
+    const res = await fetch(`/api/admin/productivity-report/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-12">
       <div className="mx-auto w-full max-w-6xl">
@@ -81,7 +89,7 @@ export default function ProductivityReportPage() {
             {loading ? (
               <p className="py-8 text-center text-sm text-slate-500">Loading…</p>
             ) : (
-              <DataTable columns={COLUMNS} rows={rows} filename="productivity-report" />
+              <DataTable columns={COLUMNS} rows={rows} filename="productivity-report" onDelete={handleDelete} />
             )}
           </div>
         </div>

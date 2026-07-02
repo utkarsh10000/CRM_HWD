@@ -21,7 +21,7 @@ export async function GET(request) {
   await dbConnect();
 
   const [planned, done] = await Promise.all([
-    Visit.countDocuments({ status: "planned", createdAt: { $gte: range.start, $lte: range.end } }),
+    Visit.countDocuments({ status: "planned", visitDate: { $gte: range.start, $lte: range.end } }),
     Visit.countDocuments({ status: { $ne: "planned" }, createdAt: { $gte: range.start, $lte: range.end } }),
   ]);
 

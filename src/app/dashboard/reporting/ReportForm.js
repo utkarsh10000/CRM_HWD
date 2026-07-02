@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 const FIELDS = [
   { key: "leadsAttended", label: "Leads Attended" },
   { key: "notConnected", label: "Not Connected" },
+  { key: "callConnected", label: "Call Connected" },
   { key: "visitPlanned", label: "Visit Planned" },
   { key: "visitManaged", label: "Visit Managed" },
   { key: "meetingDone", label: "Meeting Done" },

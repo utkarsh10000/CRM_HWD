@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const PROJECT_OPTIONS = ["Expressway Residency", "Haute World City", "Haute-1st-Avenue"];
+const PROJECT_OPTIONS = ["Expressway Residency", "Haute World City", "Haute-1st-Avenue", "Vision - 2028"];
 
 const RESPONSE_OPTIONS = [
   { value: "interested", label: "Interested" },

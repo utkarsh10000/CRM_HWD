@@ -48,6 +48,11 @@ const DailyReportSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    callConnected: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
   },
   { timestamps: true }
 );

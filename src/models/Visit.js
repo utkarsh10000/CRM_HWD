@@ -21,7 +21,7 @@ const VisitSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      enum: ["Expressway Residency", "Haute World City", "Haute-1st-Avenue"],
+      enum: ["Expressway Residency", "Haute World City", "Haute-1st-Avenue", "Vision - 2028"],
     },
     visitDate: {
       type: Date,

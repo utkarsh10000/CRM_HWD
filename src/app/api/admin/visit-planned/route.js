@@ -17,6 +17,7 @@ export async function GET(request) {
   const customEnd = searchParams.get("end");
   const employeeId = searchParams.get("employeeId") || "";
   const employeeName = searchParams.get("name") || "";
+  const project = searchParams.get("project") || "";
 
   const range = getDateRange(filter, customStart, customEnd);
   if (!range) return NextResponse.json({ error: "Invalid date range." }, { status: 400 });
@@ -38,6 +39,7 @@ export async function GET(request) {
     visitDate: { $gte: range.start, $lte: range.end },
   };
   if (allowedIds) visitQuery.employeeId = { $in: allowedIds };
+  if (project) visitQuery.project = project;
 
   const visits = await Visit.find(visitQuery).sort({ visitDate: 1 }).lean();
 
