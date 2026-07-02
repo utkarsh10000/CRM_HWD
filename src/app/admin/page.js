@@ -6,6 +6,11 @@ import DateFilter from "./_components/DateFilter";
 
 const NAV_OPTIONS = [
   {
+    href: "/admin/manage-employees",
+    title: "Manage Employees",
+    description: "Add, edit, or remove employee accounts.",
+  },
+  {
     href: "/admin/productivity-report",
     title: "Productivity Report",
     description: "View all daily reports submitted by employees.",
