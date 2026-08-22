@@ -13,12 +13,18 @@ export async function GET(request) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
+  await dbConnect();
+  const visibleIds = await getVisibleEmployeeIds(session, "dailyReports");
+  const hasTeamAccess = visibleIds === null || visibleIds.length > 1;
+
+  if (!hasTeamAccess) {
+    return NextResponse.json({ reports: [], hasTeamAccess: false });
+  }
+
   const { searchParams } = new URL(request.url);
   const filter = searchParams.get("filter") || "today";
   const customStart = searchParams.get("start");
   const customEnd = searchParams.get("end");
-  const employeeId = searchParams.get("employeeId") || "";
-  const employeeName = searchParams.get("name") || "";
 
   const range = getDateRange(filter, customStart, customEnd);
   if (!range) return NextResponse.json({ error: "Invalid date range." }, { status: 400 });
@@ -26,40 +32,15 @@ export async function GET(request) {
   const startStr = getISTDateString(range.start);
   const endStr = getISTDateString(range.end);
 
-  await dbConnect();
-
-  const visibleIds = await getVisibleEmployeeIds(session, "dailyReports");
-  if (visibleIds !== null && visibleIds.length === 0) {
-    return NextResponse.json({ error: "Not authorized." }, { status: 401 });
-  }
-
-  let allowedIds = null;
-  if (employeeId || employeeName) {
-    const conditions = [];
-    if (employeeId) conditions.push({ employeeId: { $regex: employeeId, $options: "i" } });
-    if (employeeName) conditions.push({ name: { $regex: employeeName, $options: "i" } });
-    const empQuery = conditions.length > 1 ? { $and: conditions } : conditions[0];
-    const emps = await Employee.find(empQuery).select("employeeId").lean();
-    allowedIds = emps.map((e) => e.employeeId);
-  }
-
-  if (visibleIds) {
-    allowedIds = allowedIds ? allowedIds.filter((id) => visibleIds.includes(id)) : visibleIds;
-  }
-
-  if (allowedIds && allowedIds.length === 0) {
-    return NextResponse.json({ reports: [] });
-  }
-
   const reportQuery = { reportDate: { $gte: startStr, $lte: endStr } };
-  if (allowedIds) reportQuery.employeeId = { $in: allowedIds };
+  if (visibleIds) reportQuery.employeeId = { $in: visibleIds };
 
   const reports = await DailyReport.find(reportQuery).sort({ reportDate: -1 }).lean();
 
-  const empMap = {};
   const empDocs = await Employee.find({
     employeeId: { $in: [...new Set(reports.map((r) => r.employeeId))] },
   }).lean();
+  const empMap = {};
   empDocs.forEach((e) => (empMap[e.employeeId] = e.name));
 
   const result = reports.map((r) => ({
@@ -77,5 +58,5 @@ export async function GET(request) {
     callConnected: r.callConnected,
   }));
 
-  return NextResponse.json({ reports: result });
+  return NextResponse.json({ reports: result, hasTeamAccess: true });
 }

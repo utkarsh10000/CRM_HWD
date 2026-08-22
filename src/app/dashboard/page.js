@@ -3,25 +3,9 @@ import Link from "next/link";
 import { getSession } from "@/lib/session";
 import dbConnect from "@/lib/dbConnect";
 import Employee from "@/models/Employee";
+import Access from "@/models/Access";
 import LogoutButton from "./LogoutButton";
-
-const EMPLOYEE_OPTIONS = [
-  {
-    href: "/dashboard/reporting",
-    title: "Reporting",
-    description: "Submit and view your reports.",
-  },
-  {
-    href: "/dashboard/visit-planned",
-    title: "Visit Planned",
-    description: "See your upcoming scheduled visits.",
-  },
-  {
-    href: "/dashboard/visit-done",
-    title: "Visit Done",
-    description: "Review visits you've already completed.",
-  },
-];
+import NavLinks from "./NavLinks";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -47,6 +31,9 @@ export default async function DashboardPage() {
   await dbConnect();
   const employee = await Employee.findOne({ employeeId: session.employeeId }).lean();
   const displayName = employee?.name || session.employeeId;
+  const hasTeamAccess = employee
+    ? await Access.exists({ granteeId: employee._id })
+    : false;
 
   return (
     <main className="min-h-screen flex-1 bg-slate-50 px-4 py-12">
@@ -61,18 +48,19 @@ export default async function DashboardPage() {
           <LogoutButton />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {EMPLOYEE_OPTIONS.map((option) => (
+        <NavLinks />
+
+        {hasTeamAccess && (
+          <div className="mt-4">
             <Link
-              key={option.href}
-              href={option.href}
-              className="rounded-lg border border-slate-200 bg-white p-5 transition-colors hover:border-blue-300 hover:bg-blue-50/40"
+              href="/dashboard/team-view"
+              className="block rounded-lg border border-blue-200 bg-blue-50/40 p-5 hover:border-blue-300 hover:bg-blue-50"
             >
-              <h2 className="text-sm font-semibold text-slate-900">{option.title}</h2>
-              <p className="mt-1 text-sm text-slate-500">{option.description}</p>
+              <h3 className="text-sm font-semibold text-slate-900">Team View</h3>
+              <p className="mt-1 text-sm text-slate-500">See daily reports and visits for your assigned team(s).</p>
             </Link>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </main>
   );

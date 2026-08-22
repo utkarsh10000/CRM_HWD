@@ -4,10 +4,11 @@ import DailyReport from "@/models/DailyReport";
 import Employee from "@/models/Employee";
 import { getSession } from "@/lib/session";
 import { getISTDateString } from "@/lib/istDate";
+import { getVisibleEmployeeIds } from "@/lib/access";
 
 export async function GET(request) {
   const session = await getSession();
-  if (!session || session.role !== "admin") {
+  if (!session) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
@@ -18,9 +19,16 @@ export async function GET(request) {
 
   await dbConnect();
 
-  const empQuery = {};
-  if (employeeId) empQuery.employeeId = { $regex: employeeId, $options: "i" };
-  if (employeeName) empQuery.name = { $regex: employeeName, $options: "i" };
+  const visibleIds = await getVisibleEmployeeIds(session, "dailyReports");
+  if (visibleIds !== null && visibleIds.length === 0) {
+    return NextResponse.json({ error: "Not authorized." }, { status: 401 });
+  }
+
+  const conditions = [];
+  if (employeeId) conditions.push({ employeeId: { $regex: employeeId, $options: "i" } });
+  if (employeeName) conditions.push({ name: { $regex: employeeName, $options: "i" } });
+  if (visibleIds) conditions.push({ employeeId: { $in: visibleIds } });
+  const empQuery = conditions.length === 0 ? {} : conditions.length === 1 ? conditions[0] : { $and: conditions };
 
   const allEmployees = await Employee.find(empQuery).lean();
   const submitted = await DailyReport.find({ reportDate: date }).select("employeeId").lean();

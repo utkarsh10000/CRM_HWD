@@ -4,10 +4,11 @@ import Visit from "@/models/Visit";
 import Employee from "@/models/Employee";
 import { getSession } from "@/lib/session";
 import { getDateRange } from "@/lib/dateRange";
+import { getVisibleEmployeeIds } from "@/lib/access";
 
 export async function GET(request) {
   const session = await getSession();
-  if (!session || session.role !== "admin") {
+  if (!session) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
@@ -24,14 +25,27 @@ export async function GET(request) {
 
   await dbConnect();
 
+  const visibleIds = await getVisibleEmployeeIds(session, "visitsDone");
+  if (visibleIds !== null && visibleIds.length === 0) {
+    return NextResponse.json({ error: "Not authorized." }, { status: 401 });
+  }
+
   let allowedIds = null;
   if (employeeId || employeeName) {
-    const empQuery = {};
-    if (employeeId) empQuery.employeeId = { $regex: employeeId, $options: "i" };
-    if (employeeName) empQuery.name = { $regex: employeeName, $options: "i" };
+    const conditions = [];
+    if (employeeId) conditions.push({ employeeId: { $regex: employeeId, $options: "i" } });
+    if (employeeName) conditions.push({ name: { $regex: employeeName, $options: "i" } });
+    const empQuery = conditions.length > 1 ? { $and: conditions } : conditions[0];
     const emps = await Employee.find(empQuery).select("employeeId").lean();
     allowedIds = emps.map((e) => e.employeeId);
-    if (allowedIds.length === 0) return NextResponse.json({ visits: [] });
+  }
+
+  if (visibleIds) {
+    allowedIds = allowedIds ? allowedIds.filter((id) => visibleIds.includes(id)) : visibleIds;
+  }
+
+  if (allowedIds && allowedIds.length === 0) {
+    return NextResponse.json({ visits: [] });
   }
 
   const visitQuery = {

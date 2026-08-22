@@ -17,12 +17,15 @@ const EmployeeSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    role: {
+      type: String,
+      enum: ["employee", "senior", "manager", "admin"],
+      default: "employee",
+    },
+    teamIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Team" }],
   },
   { timestamps: true }
 );
 
-// Reuse the existing model if it's already been compiled (avoids
-// "Cannot overwrite model" errors on hot reload), and pin the
-// collection name explicitly to "employees".
 export default mongoose.models.Employee ||
   mongoose.model("Employee", EmployeeSchema, "employees");

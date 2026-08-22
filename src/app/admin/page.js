@@ -11,6 +11,16 @@ const NAV_OPTIONS = [
     description: "Add, edit, or remove employee accounts.",
   },
   {
+    href: "/admin/manage-teams",
+    title: "Manage Teams",
+    description: "Create teams and assign members.",
+  },
+  {
+    href: "/admin/manage-access",
+    title: "Manage Access",
+    description: "Grant seniors and managers visibility into a team's data.",
+  },
+  {
     href: "/admin/productivity-report",
     title: "Productivity Report",
     description: "View all daily reports submitted by employees.",
@@ -49,6 +59,8 @@ export default function AdminDashboardPage() {
   const [customEnd, setCustomEnd] = useState("");
   const [stats, setStats] = useState({ planned: 0, done: 0 });
   const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [navLoadingHref, setNavLoadingHref] = useState(null);
 
   useEffect(() => {
     async function fetchStats() {
@@ -91,14 +103,20 @@ export default function AdminDashboardPage() {
           <form action="/api/auth/logout" method="POST">
             <button
               type="submit"
+              disabled={loggingOut}
               onClick={async (e) => {
                 e.preventDefault();
+                if (loggingOut) return;
+                setLoggingOut(true);
                 await fetch("/api/auth/logout", { method: "POST" });
                 window.location.href = "/";
               }}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign out
+              {loggingOut && (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+              )}
+              {loggingOut ? "Signing out..." : "Sign out"}
             </button>
           </form>
         </div>
@@ -120,16 +138,31 @@ export default function AdminDashboardPage() {
         {/* Nav options */}
         <h2 className="mb-4 text-sm font-semibold text-slate-700">Reports & Data</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {NAV_OPTIONS.map((opt) => (
-            <Link
-              key={opt.href}
-              href={opt.href}
-              className="rounded-lg border border-slate-200 bg-white p-5 transition-colors hover:border-blue-300 hover:bg-blue-50/40"
-            >
-              <h3 className="text-sm font-semibold text-slate-900">{opt.title}</h3>
-              <p className="mt-1 text-sm text-slate-500">{opt.description}</p>
-            </Link>
-          ))}
+          {NAV_OPTIONS.map((opt) => {
+            const isLoadingThis = navLoadingHref === opt.href;
+            return (
+              <Link
+                key={opt.href}
+                href={opt.href}
+                onClick={(e) => {
+                  if (navLoadingHref !== null) {
+                    e.preventDefault();
+                    return;
+                  }
+                  setNavLoadingHref(opt.href);
+                }}
+                className={`relative rounded-lg border border-slate-200 bg-white p-5 transition-colors hover:border-blue-300 hover:bg-blue-50/40 ${
+                  navLoadingHref !== null && !isLoadingThis ? "pointer-events-none opacity-50" : ""
+                }`}
+              >
+                <h3 className="text-sm font-semibold text-slate-900">{opt.title}</h3>
+                <p className="mt-1 text-sm text-slate-500">{opt.description}</p>
+                {isLoadingThis && (
+                  <span className="absolute right-4 top-4 h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                )}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </main>

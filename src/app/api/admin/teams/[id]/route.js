@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
+import Team from "@/models/Team";
 import Employee from "@/models/Employee";
+import Access from "@/models/Access";
 import { getSession } from "@/lib/session";
 
 export async function PATCH(request, { params }) {
@@ -15,36 +17,37 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { name, password, role, teamIds } = body;
-
-  if (!name || !name.trim()) {
-    return NextResponse.json({ error: "Name is required." }, { status: 400 });
-  }
+  const { name, memberIds } = body;
 
   try {
     await dbConnect();
 
-    const employee = await Employee.findById(id);
-    if (!employee) {
-      return NextResponse.json({ error: "Employee not found." }, { status: 404 });
+    const team = await Team.findById(id);
+    if (!team) {
+      return NextResponse.json({ error: "Team not found." }, { status: 404 });
     }
 
-    employee.name = name;
-    if (password && password.trim()) {
-      employee.password = password;
-    }
-    if (role) {
-      employee.role = role;
-    }
-    if (Array.isArray(teamIds)) {
-      employee.teamIds = teamIds;
+    if (name && name.trim()) {
+      team.name = name.trim();
+      await team.save();
     }
 
-    await employee.save();
+    if (Array.isArray(memberIds)) {
+      // Remove this team from anyone currently on it but not in the new list.
+      await Employee.updateMany(
+        { teamIds: id, _id: { $nin: memberIds } },
+        { $pull: { teamIds: id } }
+      );
+      // Add this team to everyone newly selected.
+      await Employee.updateMany(
+        { _id: { $in: memberIds } },
+        { $addToSet: { teamIds: id } }
+      );
+    }
 
-    return NextResponse.json({ ok: true, employee });
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("Update employee error:", err);
+    console.error("Update team error:", err);
     return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 });
   }
 }
@@ -59,13 +62,18 @@ export async function DELETE(request, { params }) {
 
   try {
     await dbConnect();
-    const deleted = await Employee.findByIdAndDelete(id);
+
+    const deleted = await Team.findByIdAndDelete(id);
     if (!deleted) {
-      return NextResponse.json({ error: "Employee not found." }, { status: 404 });
+      return NextResponse.json({ error: "Team not found." }, { status: 404 });
     }
+
+    await Employee.updateMany({ teamIds: id }, { $pull: { teamIds: id } });
+    await Access.deleteMany({ teamId: id });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("Delete employee error:", err);
+    console.error("Delete team error:", err);
     return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 });
   }
 }

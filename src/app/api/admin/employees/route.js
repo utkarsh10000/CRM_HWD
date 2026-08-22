@@ -16,6 +16,8 @@ export async function GET() {
     id: e._id.toString(),
     employeeId: e.employeeId,
     name: e.name,
+    role: e.role || "employee",
+    teamIds: (e.teamIds || []).map((t) => t.toString()),
   }));
 
   return NextResponse.json({ employees: result });
@@ -32,7 +34,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { name, employeeId, password } = body;
+  const { name, employeeId, password, role, teamIds } = body;
 
   if (!name || !employeeId || !password) {
     return NextResponse.json({ error: "All fields are required." }, { status: 400 });
@@ -46,7 +48,13 @@ export async function POST(request) {
       return NextResponse.json({ error: "An employee with this ID already exists." }, { status: 409 });
     }
 
-    const employee = await Employee.create({ name, employeeId, password });
+    const employee = await Employee.create({
+      name,
+      employeeId,
+      password,
+      role: role || "employee",
+      teamIds: Array.isArray(teamIds) ? teamIds : [],
+    });
 
     return NextResponse.json({ ok: true, employee }, { status: 201 });
   } catch (err) {

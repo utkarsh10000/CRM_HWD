@@ -34,7 +34,7 @@ export async function POST(request) {
     return response;
   }
 
-  // --- Employee login: look up employeeId + password in MongoDB. ---
+  // --- Employee/senior/manager login: look up employeeId + password. ---
   if (!employeeId) {
     return NextResponse.json({ error: "Employee ID is required." }, { status: 400 });
   }
@@ -47,14 +47,21 @@ export async function POST(request) {
       return NextResponse.json({ error: "Incorrect employee ID or password." }, { status: 401 });
     }
 
-    const token = createSessionToken({ role: "employee", employeeId });
-    const response = NextResponse.json({ ok: true, role: "employee", employeeId });
+    const effectiveRole = employee.role || "employee";
+
+    const token = createSessionToken({
+      role: effectiveRole,
+      employeeId: employee.employeeId,
+      _id: employee._id.toString(),
+      name: employee.name,
+    });
+    const response = NextResponse.json({ ok: true, role: effectiveRole, employeeId });
     response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 8, // 8 hours
+      maxAge: 60 * 60 * 8,
     });
     return response;
   } catch (err) {

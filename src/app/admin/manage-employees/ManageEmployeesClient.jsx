@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const EMPLOYEE_ID_PREFIX = "HD/EMP/";
+const ROLES = ["employee", "senior", "manager", "admin"];
 
 function EmployeeIdInput({ value, onChange }) {
   return (
@@ -26,10 +27,54 @@ function EmployeeIdInput({ value, onChange }) {
   );
 }
 
-function AddEmployeeModal({ onClose, onSaved }) {
+function RoleSelect({ value, onChange }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+    >
+      {ROLES.map((r) => (
+        <option key={r} value={r}>
+          {r.charAt(0).toUpperCase() + r.slice(1)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function TeamPicker({ teams, selectedIds, onChange }) {
+  function toggle(id) {
+    onChange(selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
+  }
+
+  if (teams.length === 0) {
+    return <p className="text-xs text-slate-400">No teams yet — create one under Manage Teams.</p>;
+  }
+
+  return (
+    <div className="max-h-32 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+      {teams.map((t) => (
+        <label key={t.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-slate-50">
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(t.id)}
+            onChange={() => toggle(t.id)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          <span className="text-slate-700">{t.name}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function AddEmployeeModal({ teams, onClose, onSaved }) {
   const [name, setName] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("employee");
+  const [teamIds, setTeamIds] = useState([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -49,7 +94,7 @@ function AddEmployeeModal({ onClose, onSaved }) {
       const res = await fetch("/api/admin/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, employeeId, password }),
+        body: JSON.stringify({ name, employeeId, password, role, teamIds }),
       });
       const data = await res.json();
 
@@ -69,7 +114,7 @@ function AddEmployeeModal({ onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Add Employee</h2>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close">✕</button>
@@ -99,6 +144,14 @@ function AddEmployeeModal({ onClose, onSaved }) {
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             />
           </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Role</label>
+            <RoleSelect value={role} onChange={setRole} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Teams</label>
+            <TeamPicker teams={teams} selectedIds={teamIds} onChange={setTeamIds} />
+          </div>
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
@@ -113,9 +166,11 @@ function AddEmployeeModal({ onClose, onSaved }) {
   );
 }
 
-function EditEmployeeModal({ employee, onClose, onSaved }) {
+function EditEmployeeModal({ employee, teams, onClose, onSaved }) {
   const [name, setName] = useState(employee.name);
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState(employee.role || "employee");
+  const [teamIds, setTeamIds] = useState(employee.teamIds || []);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -130,7 +185,7 @@ function EditEmployeeModal({ employee, onClose, onSaved }) {
 
     setSubmitting(true);
     try {
-      const body = { name };
+      const body = { name, role, teamIds };
       if (password.trim()) body.password = password;
 
       const res = await fetch(`/api/admin/employees/${employee.id}`, {
@@ -156,7 +211,7 @@ function EditEmployeeModal({ employee, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Edit Employee</h2>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close">✕</button>
@@ -190,6 +245,14 @@ function EditEmployeeModal({ employee, onClose, onSaved }) {
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             />
           </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Role</label>
+            <RoleSelect value={role} onChange={setRole} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Teams</label>
+            <TeamPicker teams={teams} selectedIds={teamIds} onChange={setTeamIds} />
+          </div>
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
@@ -206,30 +269,17 @@ function EditEmployeeModal({ employee, onClose, onSaved }) {
 
 function DeleteConfirmModal({ employee, onClose, onConfirm, deleting }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-      onClick={() => !deleting && onClose()}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => !deleting && onClose()}>
       <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-sm font-semibold text-slate-900">Delete this employee?</h3>
         <p className="mt-2 text-sm text-slate-500">
           This will permanently delete <span className="font-medium text-slate-700">{employee.name}</span> ({employee.employeeId}). This action cannot be undone.
         </p>
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={deleting}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <button type="button" onClick={onClose} disabled={deleting} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={deleting}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <button type="button" onClick={onConfirm} disabled={deleting} className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60">
             {deleting ? "Deleting…" : "Delete"}
           </button>
         </div>
@@ -238,7 +288,7 @@ function DeleteConfirmModal({ employee, onClose, onConfirm, deleting }) {
   );
 }
 
-export default function ManageEmployeesClient({ employees }) {
+export default function ManageEmployeesClient({ employees, teams }) {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editEmployee, setEditEmployee] = useState(null);
@@ -311,6 +361,8 @@ export default function ManageEmployeesClient({ employees }) {
                     <tr className="border-b border-slate-200 bg-slate-50">
                       <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Employee ID</th>
                       <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Name</th>
+                      <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Role</th>
+                      <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Teams</th>
                       <th className="whitespace-nowrap px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
                     </tr>
                   </thead>
@@ -319,24 +371,18 @@ export default function ManageEmployeesClient({ employees }) {
                       <tr key={emp.id} className={`border-b border-slate-100 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}`}>
                         <td className="whitespace-nowrap px-4 py-2.5 text-slate-700">{emp.employeeId}</td>
                         <td className="whitespace-nowrap px-4 py-2.5 text-slate-700">{emp.name}</td>
+                        <td className="whitespace-nowrap px-4 py-2.5 text-slate-700 capitalize">{emp.role}</td>
+                        <td className="whitespace-nowrap px-4 py-2.5 text-slate-700">
+                          {teams.filter((t) => emp.teamIds.includes(t.id)).map((t) => t.name).join(", ") || "—"}
+                        </td>
                         <td className="whitespace-nowrap px-4 py-2.5">
                           <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setEditEmployee(emp)}
-                              className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                              aria-label="Edit employee"
-                            >
+                            <button type="button" onClick={() => setEditEmployee(emp)} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600" aria-label="Edit employee">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                                 <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                               </svg>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteEmployee(emp)}
-                              className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                              aria-label="Delete employee"
-                            >
+                            <button type="button" onClick={() => setDeleteEmployee(emp)} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600" aria-label="Delete employee">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                                 <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
                               </svg>
@@ -355,22 +401,14 @@ export default function ManageEmployeesClient({ employees }) {
 
       {toast && (
         <div className="fixed top-6 right-6 z-50 flex items-center gap-2 rounded-md border border-green-200 bg-white px-4 py-3 text-sm font-medium text-green-700 shadow-lg">
-          <svg className="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-          </svg>
           {toast}
         </div>
       )}
 
-      {showAddModal && <AddEmployeeModal onClose={() => setShowAddModal(false)} onSaved={handleAdded} />}
-      {editEmployee && <EditEmployeeModal employee={editEmployee} onClose={() => setEditEmployee(null)} onSaved={handleEdited} />}
+      {showAddModal && <AddEmployeeModal teams={teams} onClose={() => setShowAddModal(false)} onSaved={handleAdded} />}
+      {editEmployee && <EditEmployeeModal employee={editEmployee} teams={teams} onClose={() => setEditEmployee(null)} onSaved={handleEdited} />}
       {deleteEmployee && (
-        <DeleteConfirmModal
-          employee={deleteEmployee}
-          onClose={() => setDeleteEmployee(null)}
-          onConfirm={handleDeleteConfirm}
-          deleting={deleting}
-        />
+        <DeleteConfirmModal employee={deleteEmployee} onClose={() => setDeleteEmployee(null)} onConfirm={handleDeleteConfirm} deleting={deleting} />
       )}
     </main>
   );
