@@ -5,7 +5,7 @@ const AccessSchema = new mongoose.Schema(
     granteeId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee", required: true },
     teamId: { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true },
     scopes: [
-      { type: String, enum: ["dailyReports", "visitsPlanned", "visitsDone"] },
+      { type: String, enum: ["dailyReports", "visitsPlanned", "visitsDone", "leadsDistribute"] },
     ],
     grantedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
   },

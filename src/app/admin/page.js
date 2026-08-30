@@ -40,6 +40,11 @@ const NAV_OPTIONS = [
     title: "Pending Reports",
     description: "Find employees who haven't submitted their report.",
   },
+  {
+    href: "/dashboard/leads",
+    title: "Leads",
+    description: "View, distribute, and track all leads including Meta.",
+  },
 ];
 
 function StatCard({ label, value, loading }) {

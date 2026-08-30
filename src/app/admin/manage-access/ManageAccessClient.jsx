@@ -8,6 +8,7 @@ const SCOPES = [
   { key: "dailyReports", label: "Daily Reports (incl. pending)" },
   { key: "visitsPlanned", label: "Visit Planned" },
   { key: "visitsDone", label: "Visit Done" },
+  { key: "leadsDistribute", label: "Team Leader — Leads Distribution" },
 ];
 
 export default function ManageAccessClient({ access, grantees, teams }) {

@@ -19,6 +19,11 @@ const EMPLOYEE_OPTIONS = [
     title: "Visit Done",
     description: "Review visits you've already completed.",
   },
+  {
+    href: "/dashboard/leads",
+    title: "Leads",
+    description: "View and work on your assigned leads.",
+  },
 ];
 
 export default function NavLinks() {
