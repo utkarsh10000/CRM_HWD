@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import dbConnect from "@/lib/dbConnect";
 import Lead from "@/models/Lead";
-import { fetchMetaLead, mapMetaFieldData } from "@/lib/meta";
+import { fetchMetaLead, mapMetaFieldData, extractPhone } from "@/lib/meta";
 
 // --- Webhook verification (Meta calls this once when you set up the subscription) ---
 export async function GET(request) {
@@ -44,7 +44,7 @@ async function processLead({ leadgenId, pageId, formId, createdTime }) {
       name: fullName,
       firstName: fields.first_name || "",
       lastName: fields.last_name || "",
-      phone: fields.phone_number || "",
+      phone: extractPhone(fields),
       email: fields.email || "",
       source: "meta",
       status: "new",

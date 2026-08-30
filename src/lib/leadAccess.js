@@ -14,7 +14,19 @@ export async function getLeadScope(session) {
   if (session.role === "admin") return { scope: "all" };
 
   await dbConnect();
-  const grants = await Access.find({ granteeId: session._id, scopes: "leadsDistribute" }).lean();
+
+  // Older sessions may predate the token carrying _id — fall back to a
+  // lookup by employeeId so a stale token doesn't silently strip
+  // distribution rights.
+  let granteeId = session._id;
+  if (!granteeId && session.employeeId) {
+    const emp = await Employee.findOne({ employeeId: session.employeeId }).select("_id").lean();
+    granteeId = emp?._id;
+  }
+  if (!granteeId) return { scope: "own" };
+
+  const grants = await Access.find({ granteeId, scopes: "leadsDistribute" }).lean();
+  console.log("[getLeadScope] session:", session, "granteeId:", granteeId, "grants found:", grants);
   const teamIds = grants.map((g) => g.teamId.toString());
 
   if (teamIds.length === 0) return { scope: "own" };
