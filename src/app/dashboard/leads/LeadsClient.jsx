@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 function StatCard({ label, value, sub, accent }) {
   return (
@@ -155,6 +156,26 @@ function LeadDetailModal({ leadId, onClose, onUpdated }) {
                 {saving ? "Saving…" : "Save Update"}
               </button>
             </div>
+
+            {lead.source === "ivr" && (
+              <div>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Call Details</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-md border border-slate-200 p-3 text-sm">
+                  <div><p className="text-xs text-slate-400">Caller Number</p><p className="text-slate-800">{lead.ivr?.callerNumber || "—"}</p></div>
+                  <div><p className="text-xs text-slate-400">Called Number</p><p className="text-slate-800">{lead.ivr?.calledNumber || "—"}</p></div>
+                  <div><p className="text-xs text-slate-400">Call Status</p><p className="text-slate-800 capitalize">{lead.ivr?.callStatus || "—"}</p></div>
+                  <div><p className="text-xs text-slate-400">Duration</p><p className="text-slate-800">{lead.ivr?.durationSeconds != null ? `${lead.ivr.durationSeconds}s` : "—"}</p></div>
+                  {lead.ivr?.recordingUrl && (
+                    <div className="col-span-2">
+                      <p className="text-xs text-slate-400">Recording</p>
+                      <a href={lead.ivr.recordingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        Listen to recording ↗
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {lead.source === "meta" && (
               <div>
@@ -454,26 +475,34 @@ function StatusBadge({ status }) {
 
 const SOURCE_STYLES = {
   meta: "bg-indigo-50 text-indigo-700",
+  ivr: "bg-teal-50 text-teal-700",
   website: "bg-cyan-50 text-cyan-700",
   manual: "bg-slate-100 text-slate-600",
   other: "bg-slate-100 text-slate-600",
 };
 
+const SOURCE_LABELS = { meta: "Meta", ivr: "IVR", website: "Website", manual: "Manual", other: "Other" };
+
 function SourceBadge({ source }) {
   return (
-    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${SOURCE_STYLES[source] || "bg-slate-100 text-slate-600"}`}>
-      {source === "meta" ? "Meta" : source}
+    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${SOURCE_STYLES[source] || "bg-slate-100 text-slate-600"}`}>
+      {SOURCE_LABELS[source] || source}
     </span>
   );
 }
 
-export default function LeadsClient() {
+export default function LeadsClient({ campaignId } = {}) {
+  const pathname = usePathname();
+  const homeHref = pathname.startsWith("/admin") ? "/admin" : "/dashboard";
+  const campaignsHref = pathname.startsWith("/admin") ? "/admin/leads/campaigns" : "/dashboard/leads/campaigns";
+
   const [leads, setLeads] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [canDistribute, setCanDistribute] = useState(false);
   const [loading, setLoading] = useState(true);
   const [assigningLead, setAssigningLead] = useState(null);
   const [statusFilter, setStatusFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [viewingLeadId, setViewingLeadId] = useState(null);
@@ -485,6 +514,7 @@ export default function LeadsClient() {
     try {
       const params = new URLSearchParams();
       if (statusFilter) params.set("status", statusFilter);
+      if (campaignId) params.set("campaignId", campaignId);
       const res = await fetch(`/api/leads?${params}`);
       const data = await res.json();
       setLeads(data.leads || []);
@@ -503,7 +533,7 @@ export default function LeadsClient() {
 
   useEffect(() => {
     load();
-  }, [statusFilter]);
+  }, [statusFilter, campaignId]);
 
   function toggleSelect(id) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -530,44 +560,83 @@ export default function LeadsClient() {
     return {};
   }
 
-  const filteredLeads = search
-    ? leads.filter(
-        (l) =>
-          l.name.toLowerCase().includes(search.toLowerCase()) ||
-          (l.phone || "").includes(search) ||
-          (l.email || "").toLowerCase().includes(search.toLowerCase())
-      )
-    : leads;
+  const filteredLeads = leads.filter((l) => {
+    const matchesSearch =
+      !search ||
+      l.name.toLowerCase().includes(search.toLowerCase()) ||
+      (l.phone || "").includes(search) ||
+      (l.email || "").toLowerCase().includes(search.toLowerCase());
+    const matchesSource = !sourceFilter || l.source === sourceFilter;
+    return matchesSearch && matchesSource;
+  });
 
   const totalCount = leads.length;
   const newCount = leads.filter((l) => l.status === "new").length;
   const convertedCount = leads.filter((l) => l.status === "converted").length;
-  const metaCount = leads.filter((l) => l.source === "meta").length;
+
+  const sourceCounts = leads.reduce((acc, l) => {
+    acc[l.source] = (acc[l.source] || 0) + 1;
+    return acc;
+  }, {});
+  const sourceTabs = [
+    { key: "", label: "All", count: leads.length },
+    ...Object.keys(SOURCE_LABELS)
+      .filter((s) => sourceCounts[s])
+      .map((s) => ({ key: s, label: SOURCE_LABELS[s], count: sourceCounts[s] })),
+  ];
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-8">
       <div className="mx-auto w-full max-w-6xl">
-        <Link href="/dashboard" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+        <Link href={homeHref} className="text-sm font-medium text-blue-600 hover:text-blue-700">
           ← Back to dashboard
         </Link>
 
         <div className="mb-6 mt-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Leads</h1>
+            <h1 className="text-xl font-semibold text-slate-900">
+              {campaignId ? `Campaign: ${leads[0]?.campaignName || campaignId}` : "Leads"}
+            </h1>
             <p className="mt-1 text-sm text-slate-500">
-              {canDistribute ? "Leads you own and your team's leads." : "Leads assigned to you."}
+              {campaignId
+                ? "Leads generated by this campaign only."
+                : canDistribute
+                ? "Leads you own and your team's leads."
+                : "Leads assigned to you."}
             </p>
           </div>
+          {!campaignId && (
+            <Link
+              href={campaignsHref}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              View by Campaign →
+            </Link>
+          )}
         </div>
 
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
           <StatCard label="Total Leads" value={totalCount} />
           <StatCard label="New" value={newCount} sub="Needs first contact" accent="text-blue-600" />
           <StatCard label="Converted" value={convertedCount} sub="Closed won" accent="text-green-600" />
-          <StatCard label="From Meta" value={metaCount} sub="Facebook & Instagram" accent="text-indigo-600" />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="mb-4 flex flex-wrap gap-1 rounded-md bg-slate-100 p-1">
+            {sourceTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setSourceFilter(tab.key)}
+                className={`rounded-[5px] px-3 py-1.5 text-sm font-medium transition-colors ${
+                  sourceFilter === tab.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {tab.label} <span className="text-xs text-slate-400">({tab.count})</span>
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -583,7 +652,7 @@ export default function LeadsClient() {
                 className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900"
               >
                 <option value="">All statuses</option>
-                {["new", "contacted", "qualified", "converted", "lost"].map((s) => (
+                {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>

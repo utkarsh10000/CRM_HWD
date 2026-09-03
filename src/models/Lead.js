@@ -21,7 +21,7 @@ const LeadSchema = new mongoose.Schema(
     email: { type: String, trim: true, default: "" },
     source: {
       type: String,
-      enum: ["meta", "website", "manual", "other"],
+      enum: ["meta", "ivr", "website", "manual", "other"],
       default: "manual",
     },
     status: {
@@ -43,8 +43,25 @@ const LeadSchema = new mongoose.Schema(
       pageId: { type: String, default: "" },
       formId: { type: String, default: "" },
       formName: { type: String, default: "" },
+      campaignId: { type: String, default: "" },
+      campaignName: { type: String, default: "" },
+      adsetId: { type: String, default: "" },
+      adsetName: { type: String, default: "" },
+      adId: { type: String, default: "" },
+      adName: { type: String, default: "" },
+      platform: { type: String, default: "" },
       submittedAt: { type: Date },
       customFields: { type: mongoose.Schema.Types.Mixed, default: {} },
+    },
+    ivr: {
+      callId: { type: String, default: null },
+      callerNumber: { type: String, default: "" },
+      calledNumber: { type: String, default: "" },
+      callStatus: { type: String, default: "" },
+      durationSeconds: { type: Number, default: null },
+      recordingUrl: { type: String, default: "" },
+      receivedAt: { type: Date },
+      raw: { type: mongoose.Schema.Types.Mixed, default: {} },
     },
     assignmentHistory: [AssignmentHistorySchema],
   },
@@ -54,5 +71,7 @@ const LeadSchema = new mongoose.Schema(
 // The "leadgen_id" from Meta is the idempotency key — this is what
 // makes duplicate webhook deliveries a no-op instead of a duplicate lead.
 LeadSchema.index({ "meta.leadgenId": 1 }, { unique: true, sparse: true });
+LeadSchema.index({ "ivr.callId": 1 }, { unique: true, sparse: true });
+LeadSchema.index({ "ivr.callId": 1 }, { unique: true, sparse: true });
 
 export default mongoose.models.Lead || mongoose.model("Lead", LeadSchema, "leads");

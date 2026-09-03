@@ -15,10 +15,12 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || "";
   const source = searchParams.get("source") || "";
+  const campaignId = searchParams.get("campaignId") || "";
 
   const query = await buildLeadVisibilityQuery(session);
   if (status) query.status = status;
   if (source) query.source = source;
+  if (campaignId) query["meta.campaignId"] = campaignId === "unattributed" ? "" : campaignId;
 
   const leads = await Lead.find(query).sort({ createdAt: -1 }).lean();
 
@@ -42,6 +44,8 @@ export async function GET(request) {
     assignedTo: l.assignedTo || "",
     assignedToName: l.assignedTo ? empMap[l.assignedTo] || l.assignedTo : "Unassigned",
     teamName: l.teamId ? teamMap[l.teamId.toString()] || "" : "",
+    campaignId: l.meta?.campaignId || "",
+    campaignName: l.meta?.campaignName || "",
     createdAt: l.createdAt,
   }));
 

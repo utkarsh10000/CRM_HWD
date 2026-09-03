@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import dbConnect from "@/lib/dbConnect";
 import Lead from "@/models/Lead";
+import FailedLeadEvent from "@/models/FailedLeadEvent";
 import { fetchMetaLead, mapMetaFieldData, extractPhone } from "@/lib/meta";
 
-// --- Webhook verification (Meta calls this once when you set up the subscription) ---
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("hub.mode");
@@ -25,17 +25,12 @@ function verifySignature(rawBody, signatureHeader) {
   try {
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));
   } catch {
-    return false; // length mismatch etc. — treat as invalid, not a crash
+    return false;
   }
 }
 
-async function processLead({ leadgenId, pageId, formId, createdTime }) {
-  const existing = await Lead.findOne({ "meta.leadgenId": leadgenId }).select("_id").lean();
-  if (existing) return; // duplicate delivery — no-op, per spec section 4
-
-  const leadData = await fetchMetaLead(leadgenId);
+async function saveLeadFromGraphData(leadgenId, pageId, leadData) {
   const fields = mapMetaFieldData(leadData.field_data);
-
   const fullName =
     fields.full_name || [fields.first_name, fields.last_name].filter(Boolean).join(" ") || "Unknown";
 
@@ -51,20 +46,62 @@ async function processLead({ leadgenId, pageId, formId, createdTime }) {
       meta: {
         leadgenId,
         pageId,
-        formId: formId || leadData.form_id || "",
-        formName: leadData.ad_name || "",
-        submittedAt: createdTime ? new Date(createdTime * 1000) : new Date(),
+        formId: leadData.form_id || "",
+        formName: leadData.form_name || "",
+        campaignId: leadData.campaign_id || "",
+        campaignName: leadData.campaign_name || "",
+        adsetId: leadData.adset_id || "",
+        adsetName: leadData.adset_name || "",
+        adId: leadData.ad_id || "",
+        adName: leadData.ad_name || "",
+        platform: leadData.platform || "",
+        submittedAt: leadData.created_time ? new Date(leadData.created_time * 1000) : new Date(),
         customFields: fields,
       },
     });
   } catch (err) {
-    // Race: two near-simultaneous deliveries for the same leadgen_id.
-    if (err.code === 11000) return;
+    if (err.code === 11000) return; // duplicate — already saved, fine
     throw err;
   }
 }
 
-// --- Actual lead events ---
+async function processLead({ leadgenId, pageId, formId, createdTime }) {
+  const existing = await Lead.findOne({ "meta.leadgenId": leadgenId }).select("_id").lean();
+  if (existing) return;
+
+  try {
+    const leadData = await fetchMetaLead(leadgenId);
+    await saveLeadFromGraphData(leadgenId, pageId, leadData);
+
+    // If a previous attempt had failed and was recorded, mark it resolved
+    // now that it succeeded on retry.
+    await FailedLeadEvent.updateOne({ leadgenId }, { $set: { resolved: true } });
+  } catch (err) {
+    // Never let a Graph API failure (expired token, rate limit, transient
+    // network issue) silently delete the lead. Persist it so it can be
+    // retried automatically or manually — this is what actually caused
+    // leads to go missing before, regardless of which campaign they came
+    // from.
+    console.error(`Meta webhook: failed to process leadgen_id ${leadgenId}:`, err);
+
+    await FailedLeadEvent.findOneAndUpdate(
+      { leadgenId },
+      {
+        $set: {
+          pageId,
+          formId: formId || "",
+          createdTime,
+          error: err.message,
+          errorStatus: err.status || null,
+          lastAttemptAt: new Date(),
+        },
+        $inc: { attempts: 1 },
+      },
+      { upsert: true }
+    );
+  }
+}
+
 export async function POST(request) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-hub-signature-256");
@@ -90,19 +127,15 @@ export async function POST(request) {
         const { leadgen_id: leadgenId, form_id: formId, created_time: createdTime } = change.value || {};
         if (!leadgenId) continue;
 
-        try {
-          await processLead({ leadgenId, pageId, formId, createdTime });
-        } catch (err) {
-          // Log and continue — one bad lead must not drop the rest of the batch.
-          console.error(`Meta webhook: failed to process leadgen_id ${leadgenId}:`, err);
-        }
+        await processLead({ leadgenId, pageId, formId, createdTime });
       }
     }
   } catch (err) {
     console.error("Meta webhook: processing error:", err);
   }
 
-  // Meta expects a fast 200 regardless, or it retries aggressively and can
-  // eventually disable the subscription.
+  // Always 200 to Meta — failures are now durably recorded above and
+  // retried separately, rather than relying on Meta's retry behavior
+  // (which can eventually disable the subscription on repeated failures).
   return NextResponse.json({ received: true });
 }
