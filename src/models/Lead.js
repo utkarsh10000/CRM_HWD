@@ -72,6 +72,5 @@ const LeadSchema = new mongoose.Schema(
 // makes duplicate webhook deliveries a no-op instead of a duplicate lead.
 LeadSchema.index({ "meta.leadgenId": 1 }, { unique: true, sparse: true });
 LeadSchema.index({ "ivr.callId": 1 }, { unique: true, sparse: true });
-LeadSchema.index({ "ivr.callId": 1 }, { unique: true, sparse: true });
 
 export default mongoose.models.Lead || mongoose.model("Lead", LeadSchema, "leads");
