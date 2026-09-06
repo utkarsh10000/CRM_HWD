@@ -32,12 +32,14 @@ export async function POST(request) {
 
   const extracted = extractIvrFields(fields);
 
-  // Fall back to a deterministic hash if Voicell doesn't send a call ID at
-  // all, so duplicate deliveries of the same event still dedupe correctly
-  // instead of creating a new lead every retry.
-  const callId =
-    extracted.callId ||
-    `${extracted.callerNumber}-${extracted.calledNumber}-${fields.timestamp || fields.start_time || ""}`;
+  // Fall back to a unique-enough identifier if Voicell doesn't send a real
+  // call ID. Using the exact receipt time (down to the millisecond) instead
+  // of relying on Voicell to include its own timestamp field guarantees two
+  // separate calls never collide, even from the same caller number in quick
+  // succession — while still deduping true retries of the identical webhook
+  // delivery (which arrive with the same body almost instantly, not spaced
+  // out as separate real calls).
+  const callId = extracted.callId || `${extracted.callerNumber}-${extracted.calledNumber}-${Date.now()}`;
 
   if (!callId || callId === "--") {
     console.error("IVR webhook: could not determine a call identifier, payload:", fields);
