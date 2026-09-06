@@ -26,7 +26,6 @@ export async function getLeadScope(session) {
   if (!granteeId) return { scope: "own" };
 
   const grants = await Access.find({ granteeId, scopes: "leadsDistribute" }).lean();
-  console.log("[getLeadScope] session:", session, "granteeId:", granteeId, "grants found:", grants);
   const teamIds = grants.map((g) => g.teamId.toString());
 
   if (teamIds.length === 0) return { scope: "own" };

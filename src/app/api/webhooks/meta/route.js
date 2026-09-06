@@ -5,6 +5,19 @@ import Lead from "@/models/Lead";
 import FailedLeadEvent from "@/models/FailedLeadEvent";
 import { fetchMetaLead, mapMetaFieldData, extractPhone } from "@/lib/meta";
 
+// Meta's created_time can arrive as either an ISO string ("2026-09-06T11:28:00+0000")
+// or, in some tools/testing payloads, a raw Unix timestamp number. Handle both
+// so a format mismatch never causes Mongoose validation to silently drop the lead.
+function parseMetaTimestamp(value) {
+  if (!value) return new Date();
+  if (typeof value === "number") {
+    const d = new Date(value * 1000);
+    return isNaN(d.valueOf()) ? new Date() : d;
+  }
+  const d = new Date(value);
+  return isNaN(d.valueOf()) ? new Date() : d;
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("hub.mode");
@@ -55,7 +68,7 @@ async function saveLeadFromGraphData(leadgenId, pageId, leadData) {
         adId: leadData.ad_id || "",
         adName: leadData.ad_name || "",
         platform: leadData.platform || "",
-        submittedAt: leadData.created_time ? new Date(leadData.created_time * 1000) : new Date(),
+        submittedAt: parseMetaTimestamp(leadData.created_time),
         customFields: fields,
       },
     });
