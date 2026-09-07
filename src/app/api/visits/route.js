@@ -16,7 +16,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { name, contact, project, visitDate, timeSlot } = body;
+  const { name, contact, project, visitDate, timeSlot, visitType } = body;
 
   if (!name || !contact || !project || !visitDate || !timeSlot) {
     return NextResponse.json({ error: "All fields are required." }, { status: 400 });
@@ -32,6 +32,7 @@ export async function POST(request) {
       project,
       visitDate: new Date(visitDate),
       timeSlot,
+      visitType: visitType === "cp" ? "cp" : "self",
       status: "planned",
     });
 
@@ -55,7 +56,7 @@ export async function PUT(request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { name, contact, project, visitDate, timeSlot, handledBy, response, status, remark, imageUrl, imagePublicId } = body;
+  const { name, contact, project, visitDate, timeSlot, visitType, handledBy, response, status, remark, imageUrl, imagePublicId } = body;
 
   if (!name || !contact || !project || !visitDate || !timeSlot || !handledBy || !response || !status) {
     return NextResponse.json({ error: "All required fields must be filled." }, { status: 400 });
@@ -71,6 +72,7 @@ export async function PUT(request) {
       project,
       visitDate: new Date(visitDate),
       timeSlot,
+      visitType: visitType === "cp" ? "cp" : "self",
       status,
       outcome: {
         handledBy,

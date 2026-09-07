@@ -678,6 +678,11 @@ export default function LeadsClient({ campaignId } = {}) {
           </div>
 
           <div className="mt-5">
+            {!loading && (
+              <p className="mb-2 text-sm text-slate-500">
+                {filteredLeads.length} result{filteredLeads.length !== 1 ? "s" : ""}
+              </p>
+            )}
             {loading ? (
               <p className="py-8 text-center text-sm text-slate-500">Loading…</p>
             ) : filteredLeads.length === 0 ? (

@@ -72,7 +72,9 @@ export default function VisitDoneClient({ visits }) {
         <div className="mt-6 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-slate-900">Completed Visits</h1>
-            <p className="mt-1 text-sm text-slate-500">All visits that have been marked as done.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              All visits that have been marked as done. {visits.length} result{visits.length !== 1 ? "s" : ""}.
+            </p>
           </div>
           <button
             type="button"
@@ -118,7 +120,16 @@ export default function VisitDoneClient({ visits }) {
                   </div>
 
                   <div className="p-4">
-                    <h2 className="text-sm font-semibold text-slate-900">{visit.name}</h2>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-slate-900">{visit.name}</h2>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          visit.visitType === "cp" ? "bg-purple-50 text-purple-700" : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {visit.visitType === "cp" ? "CP" : "Self"}
+                      </span>
+                    </div>
                     <p className="mt-0.5 text-sm text-slate-500">{visit.project}</p>
 
                     <div className="mt-3 space-y-1 text-sm text-slate-700">

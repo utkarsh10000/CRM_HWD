@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import VisitTypeCheckboxes from "@/components/VisitTypeCheckboxes";
 
 const RESPONSE_OPTIONS = [
   { value: "interested", label: "Interested" },
@@ -27,6 +28,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function VisitDoneForm({ visit, onSaved }) {
+  const [visitType, setVisitType] = useState(visit.visitType || "self");
   const [handledBy, setHandledBy] = useState(visit.outcome?.handledBy || "");
   const [response, setResponse] = useState(visit.outcome?.response || "");
   const [status, setStatus] = useState(visit.status !== "planned" ? visit.status : "visited");
@@ -98,7 +100,7 @@ export default function VisitDoneForm({ visit, onSaved }) {
       const res = await fetch(`/api/visits/${visit.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handledBy, response, status, remark, imageUrl, imagePublicId }),
+        body: JSON.stringify({ handledBy, response, status, remark, imageUrl, imagePublicId, visitType }),
       });
 
       const data = await res.json();
@@ -120,6 +122,8 @@ export default function VisitDoneForm({ visit, onSaved }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <VisitTypeCheckboxes value={visitType} onChange={setVisitType} />
+
       {/* Handled By */}
       <div>
         <label htmlFor="handledBy" className="mb-1.5 block text-sm font-medium text-slate-700">

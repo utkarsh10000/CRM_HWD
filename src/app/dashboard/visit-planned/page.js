@@ -27,6 +27,7 @@ export default async function VisitPlannedPage() {
     project: v.project,
     visitDate: v.visitDate.toISOString(),
     timeSlot: v.timeSlot,
+    visitType: v.visitType || "self",
   }));
 
   return <VisitPlannedClient visits={visits} />;

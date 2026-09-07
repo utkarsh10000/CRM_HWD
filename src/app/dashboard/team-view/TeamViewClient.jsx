@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import DateFilter from "@/app/admin/_components/DateFilter";
 import DataTable from "@/app/admin/_components/DataTable";
+import DailyBreakdownModal from "@/components/DailyBreakdownModal";
+import { aggregateReportsByEmployee } from "@/lib/reportAggregate";
 
 const TABS = [
   {
@@ -38,6 +40,7 @@ const TABS = [
       { key: "project", label: "Project" },
       { key: "visitDate", label: "Visit Date" },
       { key: "timeSlot", label: "Time Slot" },
+      { key: "visitTypeLabel", label: "Type" },
     ],
   },
   {
@@ -53,6 +56,7 @@ const TABS = [
       { key: "project", label: "Project" },
       { key: "visitDate", label: "Visit Date" },
       { key: "status", label: "Status" },
+      { key: "visitTypeLabel", label: "Type" },
     ],
   },
 ];
@@ -65,6 +69,7 @@ export default function TeamViewClient() {
   const [rows, setRows] = useState([]);
   const [hasTeamAccess, setHasTeamAccess] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [viewingEmployeeId, setViewingEmployeeId] = useState(null);
 
   const tab = TABS.find((t) => t.key === activeTab);
 
@@ -79,7 +84,11 @@ export default function TeamViewClient() {
       try {
         const res = await fetch(`${tab.endpoint}?${params}`);
         const data = await res.json();
-        setRows(data[tab.dataKey] || []);
+        const items = data[tab.dataKey] || [];
+        const withLabels = items.map((item) =>
+          "visitType" in item ? { ...item, visitTypeLabel: item.visitType === "cp" ? "CP" : "Self" } : item
+        );
+        setRows(withLabels);
         setHasTeamAccess(data.hasTeamAccess !== false);
       } catch {
         setRows([]);
@@ -99,6 +108,18 @@ export default function TeamViewClient() {
     setCustomEnd(end || "");
   }
 
+  function handleTabChange(key) {
+    setActiveTab(key);
+    setViewingEmployeeId(null);
+  }
+
+  const isReportsTab = activeTab === "reports";
+  const aggregatedRows = isReportsTab ? aggregateReportsByEmployee(rows) : rows;
+  const viewingEmployee =
+    isReportsTab && viewingEmployeeId
+      ? aggregatedRows.find((r) => r.employeeId === viewingEmployeeId)
+      : null;
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-12">
       <div className="mx-auto w-full max-w-5xl">
@@ -114,7 +135,7 @@ export default function TeamViewClient() {
             {TABS.map((t) => (
               <button
                 key={t.key}
-                onClick={() => setActiveTab(t.key)}
+                onClick={() => handleTabChange(t.key)}
                 className={`flex-1 rounded-[5px] px-3 py-1.5 text-sm font-medium transition-colors ${
                   activeTab === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
@@ -134,6 +155,12 @@ export default function TeamViewClient() {
             />
           </div>
 
+          {isReportsTab && (
+            <p className="mt-3 text-xs text-slate-400">
+              Showing totals per employee for the selected range — click a name to see the day-by-day breakdown.
+            </p>
+          )}
+
           <div className="mt-6">
             {!hasTeamAccess ? (
               <p className="py-8 text-center text-sm text-slate-500">
@@ -142,11 +169,24 @@ export default function TeamViewClient() {
             ) : loading ? (
               <p className="py-8 text-center text-sm text-slate-500">Loading…</p>
             ) : (
-              <DataTable columns={tab.columns} rows={rows} filename={`team-${tab.key}`} />
+              <DataTable
+                columns={tab.columns}
+                rows={aggregatedRows}
+                filename={`team-${tab.key}`}
+                onNameClick={isReportsTab ? (row) => setViewingEmployeeId(row.employeeId) : undefined}
+              />
             )}
           </div>
         </div>
       </div>
+
+      {viewingEmployee && (
+        <DailyBreakdownModal
+          employeeName={viewingEmployee.name}
+          days={viewingEmployee._days}
+          onClose={() => setViewingEmployeeId(null)}
+        />
+      )}
     </main>
   );
 }

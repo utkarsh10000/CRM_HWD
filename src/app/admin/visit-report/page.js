@@ -15,6 +15,7 @@ const COLUMNS = [
   { key: "contact", label: "Contact" },
   { key: "project", label: "Project" },
   { key: "timeSlot", label: "Time Slot" },
+  { key: "visitTypeLabel", label: "Type" },
   { key: "status", label: "Status" },
 ];
 
@@ -41,7 +42,7 @@ export default function AdminVisitReportPage() {
     try {
       const res = await fetch(`/api/admin/visit-report?${params}`);
       const data = await res.json();
-      setRows(data.visits ?? []);
+      setRows((data.visits ?? []).map((v) => ({ ...v, visitTypeLabel: v.visitType === "cp" ? "CP" : "Self" })));
     } finally {
       setLoading(false);
     }

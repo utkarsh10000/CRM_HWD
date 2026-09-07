@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import VisitTypeCheckboxes from "@/components/VisitTypeCheckboxes";
 
 const PROJECT_OPTIONS = ["Expressway Residency", "Haute World City", "Haute-1st-Avenue", "Vision - 2028"];
 
@@ -34,6 +35,7 @@ export default function AddVisitDoneForm({ onSaved }) {
   const [project, setProject] = useState("");
   const [visitDate, setVisitDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
+  const [visitType, setVisitType] = useState("self");
   const [handledBy, setHandledBy] = useState("");
   const [response, setResponse] = useState("");
   const [status, setStatus] = useState("visited");
@@ -100,7 +102,7 @@ export default function AddVisitDoneForm({ onSaved }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name, contact, project, visitDate, timeSlot,
+          name, contact, project, visitDate, timeSlot, visitType,
           handledBy, response, status, remark, imageUrl, imagePublicId,
         }),
       });
@@ -200,6 +202,10 @@ export default function AddVisitDoneForm({ onSaved }) {
                 className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               />
             </div>
+          </div>
+
+          <div className="mt-3">
+            <VisitTypeCheckboxes value={visitType} onChange={setVisitType} />
           </div>
         </div>
       </div>

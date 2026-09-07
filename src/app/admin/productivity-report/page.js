@@ -5,6 +5,8 @@ import Link from "next/link";
 import DateFilter from "../_components/DateFilter";
 import EmployeeFilter from "../_components/EmployeeFilter";
 import DataTable from "../_components/DataTable";
+import DailyBreakdownModal from "@/components/DailyBreakdownModal";
+import { aggregateReportsByEmployee } from "@/lib/reportAggregate";
 
 const COLUMNS = [
   { key: "reportDate", label: "Date" },
@@ -26,8 +28,9 @@ export default function ProductivityReportPage() {
   const [customEnd, setCustomEnd] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [employeeName, setEmployeeName] = useState("");
-  const [rows, setRows] = useState([]);
+  const [rawRows, setRawRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewingEmployeeId, setViewingEmployeeId] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -41,7 +44,7 @@ export default function ProductivityReportPage() {
     try {
       const res = await fetch(`/api/admin/productivity-report?${params}`);
       const data = await res.json();
-      setRows(data.reports ?? []);
+      setRawRows(data.reports ?? []);
     } finally {
       setLoading(false);
     }
@@ -65,9 +68,14 @@ export default function ProductivityReportPage() {
   async function handleDelete(id) {
     const res = await fetch(`/api/admin/productivity-report/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setRows((prev) => prev.filter((r) => r.id !== id));
+      setRawRows((prev) => prev.filter((r) => r.id !== id));
     }
   }
+
+  const aggregatedRows = aggregateReportsByEmployee(rawRows);
+  const viewingEmployee = viewingEmployeeId
+    ? aggregatedRows.find((r) => r.employeeId === viewingEmployeeId)
+    : null;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-12">
@@ -78,7 +86,10 @@ export default function ProductivityReportPage() {
 
         <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
           <h1 className="text-lg font-semibold text-slate-900">Productivity Report</h1>
-          <p className="mt-1 text-sm text-slate-500">Daily reports submitted by employees.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Daily reports submitted by employees. When more than one day is in range, each employee's numbers are
+            totalled — click their name to see the day-by-day breakdown.
+          </p>
 
           <div className="mt-4 flex flex-wrap gap-4">
             <DateFilter value={filter} customStart={customStart} customEnd={customEnd} onChange={handleFilterChange} />
@@ -89,11 +100,25 @@ export default function ProductivityReportPage() {
             {loading ? (
               <p className="py-8 text-center text-sm text-slate-500">Loading…</p>
             ) : (
-              <DataTable columns={COLUMNS} rows={rows} filename="productivity-report" onDelete={handleDelete} />
+              <DataTable
+                columns={COLUMNS}
+                rows={aggregatedRows}
+                filename="productivity-report"
+                onNameClick={(row) => setViewingEmployeeId(row.employeeId)}
+              />
             )}
           </div>
         </div>
       </div>
+
+      {viewingEmployee && (
+        <DailyBreakdownModal
+          employeeName={viewingEmployee.name}
+          days={viewingEmployee._days}
+          onClose={() => setViewingEmployeeId(null)}
+          onDelete={handleDelete}
+        />
+      )}
     </main>
   );
 }

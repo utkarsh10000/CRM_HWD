@@ -53,6 +53,7 @@ export async function GET(request) {
     project: v.project,
     visitDate: v.visitDate.toISOString().slice(0, 10),
     timeSlot: v.timeSlot,
+    visitType: v.visitType || "self",
   }));
 
   return NextResponse.json({ visits: result, hasTeamAccess: true });

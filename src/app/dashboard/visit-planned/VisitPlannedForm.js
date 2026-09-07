@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import VisitTypeCheckboxes from "@/components/VisitTypeCheckboxes";
 
 const PROJECT_OPTIONS = ["Expressway Residency", "Haute World City", "Haute-1st-Avenue", "Vision - 2028"];
 
@@ -10,6 +11,7 @@ export default function VisitPlannedForm({ onSaved }) {
   const [project, setProject] = useState("");
   const [visitDate, setVisitDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
+  const [visitType, setVisitType] = useState("self");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,7 +29,7 @@ export default function VisitPlannedForm({ onSaved }) {
       const res = await fetch("/api/visits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, contact, project, visitDate, timeSlot }),
+        body: JSON.stringify({ name, contact, project, visitDate, timeSlot, visitType }),
       });
       const data = await res.json();
 
@@ -41,6 +43,7 @@ export default function VisitPlannedForm({ onSaved }) {
       setProject("");
       setVisitDate("");
       setTimeSlot("");
+      setVisitType("self");
       onSaved?.();
     } catch (err) {
       console.error("Save visit failed:", err);
@@ -125,6 +128,8 @@ export default function VisitPlannedForm({ onSaved }) {
           />
         </div>
       </div>
+
+      <VisitTypeCheckboxes value={visitType} onChange={setVisitType} />
 
       {error && (
         <p role="alert" className="text-sm text-red-600">

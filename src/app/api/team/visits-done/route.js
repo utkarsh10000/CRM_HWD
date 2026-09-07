@@ -54,6 +54,7 @@ export async function GET(request) {
     visitDate: v.visitDate.toISOString().slice(0, 10),
     timeSlot: v.timeSlot,
     status: v.status,
+    visitType: v.visitType || "self",
   }));
 
   return NextResponse.json({ visits: result, hasTeamAccess: true });

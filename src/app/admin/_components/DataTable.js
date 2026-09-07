@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function DataTable({ columns, rows, filename = "export", onDelete }) {
+export default function DataTable({ columns, rows, filename = "export", onDelete, onNameClick, nameKey = "name" }) {
   function exportCSV() {
     const header = columns.map((c) => c.label).join(",");
     const body = rows
@@ -41,7 +41,10 @@ export default function DataTable({ columns, rows, filename = "export", onDelete
 
   return (
     <div>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm text-slate-500">
+          {rows.length} result{rows.length !== 1 ? "s" : ""}
+        </p>
         <button
           type="button"
           onClick={exportCSV}
@@ -81,7 +84,17 @@ export default function DataTable({ columns, rows, filename = "export", onDelete
                 >
                   {columns.map((col) => (
                     <td key={col.key} className="whitespace-nowrap px-4 py-2.5 text-slate-700">
-                      {row[col.key] ?? "—"}
+                      {onNameClick && col.key === nameKey ? (
+                        <button
+                          type="button"
+                          onClick={() => onNameClick(row)}
+                          className="font-medium text-blue-600 hover:underline"
+                        >
+                          {row[col.key] ?? "—"}
+                        </button>
+                      ) : (
+                        row[col.key] ?? "—"
+                      )}
                     </td>
                   ))}
                   {onDelete && (

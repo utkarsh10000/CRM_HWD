@@ -10,7 +10,7 @@ const CALLED_HINTS = ["called", "to", "dnis", "destination"];
 const DURATION_HINTS = ["duration", "billsec", "talktime", "call_time"];
 const STATUS_HINTS = ["status", "disposition", "callstatus", "result"];
 const RECORDING_HINTS = ["recording", "record_url", "audiourl"];
-const CALLID_HINTS = ["call_id", "callid", "uuid", "call_uuid", "session_id", "sessionid", "reference_id", "timestamp", "time", "date"];
+const CALLID_HINTS = ["call_id", "callid", "uuid", "call_uuid", "session_id", "sessionid", "reference_id"];
 
 function findByHints(fields, hints) {
   for (const [key, value] of Object.entries(fields)) {

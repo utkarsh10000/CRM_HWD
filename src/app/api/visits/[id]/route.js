@@ -65,7 +65,7 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  const { handledBy, response, status, remark, imageUrl, imagePublicId } = body;
+  const { handledBy, response, status, remark, imageUrl, imagePublicId, visitType } = body;
 
   if (!handledBy || !response || !status) {
     return NextResponse.json(
@@ -83,6 +83,9 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: "Visit not found." }, { status: 404 });
     }
 
+    if (visitType === "cp" || visitType === "self") {
+      visit.visitType = visitType;
+    }
     visit.status = status;
     visit.outcome = {
       handledBy,

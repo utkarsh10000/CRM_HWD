@@ -30,6 +30,7 @@ export default async function VisitDonePage() {
     project: v.project,
     visitDate: v.visitDate.toISOString(),
     timeSlot: v.timeSlot,
+    visitType: v.visitType || "self",
     status: v.status,
     outcome: v.outcome
       ? {

@@ -15,6 +15,7 @@ const COLUMNS = [
   { key: "contact", label: "Contact" },
   { key: "project", label: "Project" },
   { key: "timeSlot", label: "Time Slot" },
+  { key: "visitTypeLabel", label: "Type" },
 ];
 
 export default function AdminVisitPlannedPage() {
@@ -40,7 +41,7 @@ export default function AdminVisitPlannedPage() {
     try {
       const res = await fetch(`/api/admin/visit-planned?${params}`);
       const data = await res.json();
-      setRows(data.visits ?? []);
+      setRows((data.visits ?? []).map((v) => ({ ...v, visitTypeLabel: v.visitType === "cp" ? "CP" : "Self" })));
     } finally {
       setLoading(false);
     }

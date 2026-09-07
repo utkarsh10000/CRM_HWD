@@ -32,6 +32,11 @@ const VisitSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    visitType: {
+      type: String,
+      enum: ["self", "cp"],
+      default: "self",
+    },
     status: {
       type: String,
       enum: ["planned", "visited", "interested", "not_interested", "follow_up", "revisit_requested", "closed"],
