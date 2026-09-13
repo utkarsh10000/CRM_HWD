@@ -53,6 +53,16 @@ const DailyReportSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    totalCalls: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    virtualMeeting: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
   },
   { timestamps: true }
 );

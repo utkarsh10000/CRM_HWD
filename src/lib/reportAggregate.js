@@ -2,9 +2,11 @@ const NUMERIC_FIELDS = [
   "leadsAttended",
   "notConnected",
   "callConnected",
+  "totalCalls",
   "visitPlanned",
   "visitManaged",
   "meetingDone",
+  "virtualMeeting",
   "bookingByCp",
   "bookingBySelf",
 ];

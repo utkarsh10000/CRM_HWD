@@ -53,9 +53,11 @@ export async function GET(request) {
     visitPlanned: r.visitPlanned,
     visitManaged: r.visitManaged,
     meetingDone: r.meetingDone,
+    virtualMeeting: r.virtualMeeting,
     bookingByCp: r.bookingByCp,
     bookingBySelf: r.bookingBySelf,
     callConnected: r.callConnected,
+    totalCalls: r.totalCalls,
   }));
 
   return NextResponse.json({ reports: result, hasTeamAccess: true });

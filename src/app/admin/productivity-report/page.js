@@ -17,7 +17,9 @@ const COLUMNS = [
   { key: "visitPlanned", label: "Visit Planned" },
   { key: "visitManaged", label: "Visit Managed" },
   { key: "meetingDone", label: "Meeting Done" },
+  { key: "virtualMeeting", label: "Virtual Meeting" },
   { key: "callConnected", label: "Call Connected" },
+  { key: "totalCalls", label: "Total Calls" },
   { key: "bookingByCp", label: "Booking by CP" },
   { key: "bookingBySelf", label: "Booking by Self" },
 ];
