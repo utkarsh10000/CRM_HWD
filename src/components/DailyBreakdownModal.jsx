@@ -2,13 +2,17 @@
 
 const COLUMNS = [
   { key: "reportDate", label: "Date" },
+  { key: "location", label: "Location" },
   { key: "leadsAttended", label: "Leads Attended" },
   { key: "notConnected", label: "Not Connected" },
   { key: "callConnected", label: "Call Connected" },
   { key: "totalCalls", label: "Total Calls" },
   { key: "visitPlanned", label: "Visit Planned" },
   { key: "visitManaged", label: "Visit Managed" },
-  { key: "meetingDone", label: "Meeting Done" },
+  { key: "meetingDoneCp", label: "Meeting Done by CP" },
+  { key: "meetingDoneClient", label: "Meeting Done by Client" },
+  { key: "meetingDoneInvestor", label: "Meeting Done by Investor" },
+  { key: "businessClocked", label: "Business Clocked" },
   { key: "virtualMeeting", label: "Virtual Meeting" },
   { key: "bookingByCp", label: "Booking by CP" },
   { key: "bookingBySelf", label: "Booking by Self" },

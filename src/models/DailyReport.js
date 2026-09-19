@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+export const DAILY_REPORT_LOCATIONS = ["Dholera", "Delhi-Meerut-Expressway"];
+
 const DailyReportSchema = new mongoose.Schema(
   {
     employeeId: {
@@ -12,6 +14,11 @@ const DailyReportSchema = new mongoose.Schema(
     reportDate: {
       type: String,
       required: true,
+    },
+    location: {
+      type: String,
+      required: true,
+      enum: DAILY_REPORT_LOCATIONS,
     },
     leadsAttended: {
       type: Number,
@@ -33,7 +40,24 @@ const DailyReportSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    meetingDone: {
+    // Meeting Done is split by who the meeting was with, plus a separate
+    // count of business clocked.
+    meetingDoneCp: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    meetingDoneClient: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    meetingDoneInvestor: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    businessClocked: {
       type: Number,
       required: true,
       min: 0,
@@ -70,5 +94,8 @@ const DailyReportSchema = new mongoose.Schema(
 // One report per employee per day.
 DailyReportSchema.index({ employeeId: 1, reportDate: 1 }, { unique: true });
 
-export default mongoose.models.DailyReport ||
-  mongoose.model("DailyReport", DailyReportSchema, "dailyreports");
+// Force a fresh model definition so the new fields take effect immediately
+// under Next.js hot reload in dev (same pattern used by Visit.js).
+delete mongoose.models.DailyReport;
+
+export default mongoose.model("DailyReport", DailyReportSchema, "dailyreports");

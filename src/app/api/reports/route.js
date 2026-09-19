@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
-import DailyReport from "@/models/DailyReport";
+import DailyReport, { DAILY_REPORT_LOCATIONS } from "@/models/DailyReport";
 import { getSession } from "@/lib/session";
 import { getISTDateString } from "@/lib/istDate";
 
@@ -11,7 +11,10 @@ const FIELDS = [
   "totalCalls",
   "visitPlanned",
   "visitManaged",
-  "meetingDone",
+  "meetingDoneCp",
+  "meetingDoneClient",
+  "meetingDoneInvestor",
+  "businessClocked",
   "virtualMeeting",
   "bookingByCp",
   "bookingBySelf",
@@ -28,6 +31,11 @@ export async function POST(request) {
 
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  const { location } = body;
+  if (!location || !DAILY_REPORT_LOCATIONS.includes(location)) {
+    return NextResponse.json({ error: "Please select a valid location." }, { status: 400 });
   }
 
   const values = {};
@@ -55,6 +63,7 @@ export async function POST(request) {
     const report = await DailyReport.create({
       employeeId: session.employeeId,
       reportDate,
+      location,
       ...values,
     });
 
