@@ -6,6 +6,7 @@ import Employee from "@/models/Employee";
 import Access from "@/models/Access";
 import LogoutButton from "./LogoutButton";
 import NavLinks from "./NavLinks";
+import EmployeeStatsClient from "./EmployeeStatsClient";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -27,16 +28,20 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen flex-1 bg-slate-50 px-4 py-12">
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold text-slate-900 break-words">
               Welcome, {displayName}
             </h1>
             <p className="mt-1 text-sm text-slate-500">What would you like to do?</p>
           </div>
-          <LogoutButton />
+          <div className="shrink-0">
+            <LogoutButton />
+          </div>
         </div>
+
+        <EmployeeStatsClient />
 
         <NavLinks />
 

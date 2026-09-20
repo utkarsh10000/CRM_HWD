@@ -74,6 +74,7 @@ export async function GET(request) {
     timeSlot: v.timeSlot,
     status: v.status,
     visitType: v.visitType || "self",
+    imageUrl: v.outcome?.imageUrl || "",
   }));
 
   return NextResponse.json({ visits: result });

@@ -9,7 +9,7 @@ export default function DataTable({ columns, rows, filename = "export", onDelete
       .map((row) =>
         columns
           .map((c) => {
-            const val = row[c.key] ?? "";
+            const val = c.csvValue ? c.csvValue(row) : row[c.key] ?? "";
             return `"${String(val).replace(/"/g, '""')}"`;
           })
           .join(",")
@@ -84,7 +84,9 @@ export default function DataTable({ columns, rows, filename = "export", onDelete
                 >
                   {columns.map((col) => (
                     <td key={col.key} className="whitespace-nowrap px-4 py-2.5 text-slate-700">
-                      {onNameClick && col.key === nameKey ? (
+                      {col.render ? (
+                        col.render(row)
+                      ) : onNameClick && col.key === nameKey ? (
                         <button
                           type="button"
                           onClick={() => onNameClick(row)}
